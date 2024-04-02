@@ -129,7 +129,7 @@ class Parser:
             return None
         return self.tokens[i+1]
     
-    def parse_call_chain(self, at) -> [List[Token], int]:
+    def parse_call_chain(self, at: int) -> tuple[List[Token], int]:
         assert self.tokens[at].type == TokenType.IDENTIFIER
         call_chain_tokens = [self.tokens[at]]
         offset = 0
@@ -166,12 +166,12 @@ class Parser:
         assert self.tokens[at].type == TokenType.IDENTIFIER
         offset =  0
 
-        if tokens[at+1].type != TokenType.LPAREN:
+        if self.tokens[at+1].type != TokenType.LPAREN:
             return [], offset
 
         closing_paren_index = self.get_closing_paren_index(self.tokens, at+1)
         if not closing_paren_index:
-            raise EspressoInvalidSyntax("( Was never closed at {}".format(self.tokens[i+1].position))
+            raise EspressoInvalidSyntax("( Was never closed at {}".format(self.tokens[at+1].position))
 
         func_param_tokens = self.tokens[at+2:closing_paren_index]
         return self.parse(func_param_tokens), closing_paren_index - at
