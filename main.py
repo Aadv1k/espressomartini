@@ -1,204 +1,97 @@
-from enum import Enum, auto
-from typing import Union, List, NamedTuple
+from espresso.Parser import Parser, StackFrame
+from espresso.Lexer import Lexer
+from espresso.utils import Stack
 
-import pprint
+from typing import NamedTuple, List, Union
 
-import random
+class Func(NamedTuple):
+    func_call: callable
+    func_name: List[str]
+    func_argument_types: List[str]
 
-class EspressoInvalidSyntax(Exception):
-    pass
+class Evaluator:
+    def __init__(self) -> None:
+        self.namespace = {}
 
-class StackFrame(NamedTuple):
-    func_chain : List[str]
-    func_params: List[Union[int, str, 'StackFrame']]
+    def get_function(self, func_name: Union[List[str], str]) -> Func:
+        func_call_chain = func_name if isinstance(type(func_name), list) else func_name.split(".")
+        final_func = None
+        for call in func_call_chain:
+            final_func =  self.namespace.get(call)
 
-class Stack:
-    def __init__(self):
-        self.stack = []
+        if not final_func:
+            raise NameError("Function \"{}\" is not defined in Namespace \"{}\"".format(func_call_chain[-1], ".".join(func_call_chain[:-1])))
+            
+        return final_func
 
-    @property
-    def length(self):
-        return len(self.stack)
+    def define_function(self, f: Func):
+        def_space = self.namespace
+        for name in f.func_name[:-1]:
+            def_space = self.namespace.setdefault(name, {})
 
-    def peek(self):
-        if len(self.stack) == 0:
-            return None
-        return self.stack[self.length - 1]
+        def_space[f.func_name[-1]] = f
 
-    def push(self, f):
-        self.stack.append(f)
-        
-    def pop(self):
-        if len(self.stack) == 0:
-            return None
-        return self.stack.pop()
+    def is_variadic(self, func: Func, params: List[Union[str, int]]):
+        return len(func.func_argument_types) > 0 and func.func_argument_types[0].startswith("*"):
 
-    def __iter__(self):
-        return iter(self.stack)
+    def get_typed_params(self, func: Func, params: List[Union[str, int]]):
+        param_types = func.func_argument_types
+        parsed_params = []
 
-class TokenType(Enum):
-    LPAREN = auto()
-    RPAREN = auto()
-    DOT = auto()
+        if self.is_variadic(func, params):
+            param_types = [param_types[0][1:]] * len(param_types)
 
-    INTEGER = auto()
-    STRING = auto()
-    IDENTIFIER = auto()
-
-class Token(NamedTuple):
-    type: TokenType
-    value: str
-    position: int
-
-class Lexer:
-    def __init__(self):
-        self.input = None
-        self.cursor = -1
-
-    def lex(self, input_string):
-        self.input = input_string.strip().replace("\n", " ")
-
-        tokens = []
-
-        while self.advance() is not None:
-            if self.cur() == ".":
-                tokens.append(Token(TokenType.DOT, ".", self.cursor))
-            elif self.cur() == ",":
-                pass
-            elif self.cur() == "(":
-                tokens.append(Token(TokenType.LPAREN, "(", self.cursor))
-            elif self.cur() == ")":
-                tokens.append(Token(TokenType.RPAREN, ")", self.cursor))
-            elif self.cur() == "\"":
-                n = self.find_next_index("\"")
-                if n is None:
-                    raise EspressoInvalidSyntax(f"Unterminated string literal at position {self.cursor}")
-                tokens.append(Token(TokenType.STRING, self.input[self.cursor + 1:n], self.cursor))
-                self.cursor = n 
-            elif self.cur() == " ":
+        for i, param_type in enumerate(param_types):
+            if param_type.endswith("?") and not params[i]:
+                parsed_params.append(None)
                 continue
-            elif self.cur().isdigit():
-                start = self.cursor
-                end = self.cursor
-                while end < len(self.input) and self.input[end].isdigit():
-                    end+=1
-                tokens.append(Token(TokenType.INTEGER, self.input[start:end], start))
-                self.cursor = end - 1
-            elif self.cur().isalpha():
-                start = self.cursor
-                end = self.cursor
-                while end < len(self.input) and self.input[end].isalpha():
-                    end+=1
-                tokens.append(Token(TokenType.IDENTIFIER, self.input[start:end], start))
-                self.cursor = end - 1
+
+            if param_type.startswith("str") and not isinstance(params[i], str):
+                raise Exception("PROPER ERROR MESSAGE HERE")
+            elif param_type.startswith("int") and not isinstance(params[i], int):
+                raise Exception("PROPER ERROR MESSAGE HERE")
+            elif param_type.startswith("any"): # simply ignore and push
+                pass
             else:
-                raise EspressoInvalidSyntax(f"Invalid character encountered at position {self.cursor}: {self.cur()}")
+                raise Exception("UNKNOWN PARAM TYPE LOL")
+            
+            parsed_params.append(params[i])
 
-        return tokens
+        return parsed_params
+            
 
-    def cur(self):
-        return self.input[self.cursor]
+            
 
-    def find_next_index(self, char):
-        for i in range(self.cursor + 1, len(self.input)):
-            if self.input[i] == char:
-                return i
-        return None
+    def is_variadic(self) -> bool:
+        pass
 
-    def retreat(self):
-        if self.cursor == 0:
-            return None
+    def _eval_stack_frame(self, frame: StackFrame):
+        func_def = self.get_function(frame.func_chain)
+        func_params = []
 
-        self.cursor -= 1
-        return self.cursor
-
-    def advance(self):
-        if self.cursor == (len(self.input) - 1):
-            return None
-
-        self.cursor += 1
-        return self.cursor
-
-class Parser:
-    def __init__(self):
-        self.call_stack = Stack()
-        self.tokens = None
-    
-    def next_token(self, i):
-        if i + 1 >= len(self.tokens):
-            return None
-        return self.tokens[i+1]
-    
-    def parse_call_chain(self, at: int) -> tuple[List[Token], int]:
-        assert self.tokens[at].type == TokenType.IDENTIFIER
-        call_chain_tokens = [self.tokens[at]]
-        offset = 0
-
-        i = 0
-        while (i < len(self.tokens) - 1) and (self.tokens[i].type != TokenType.LPAREN):
-            cur, nxt = self.tokens[i], self.next_token(i)
-
-            if cur.type == TokenType.DOT:
-                if nxt is None or nxt.type != TokenType.IDENTIFIER:
-                    raise EspressoInvalidSyntax("Invalid syntax at col {}".format(cur.position))
-
-                offset += 2
-                call_chain_tokens.append(nxt)
-            i+=1
-
-        return call_chain_tokens, offset
-
-    def get_closing_paren_index(self, tokens, idx):
-        stack = Stack()
-
-        for i in range(idx, len(tokens)):
-            if tokens[i].type == TokenType.RPAREN:
-                if stack.length == 1:
-                    return i
-                else:
-                    stack.pop()
-            elif tokens[i].type == TokenType.LPAREN:
-                stack.push(True)
-
-        return None
-
-    def parse_func_params(self, at: int) -> List[Token]:
-        assert self.tokens[at].type == TokenType.IDENTIFIER
-        offset =  0
-
-        if self.tokens[at+1].type != TokenType.LPAREN:
-            return [], offset
-
-        closing_paren_index = self.get_closing_paren_index(self.tokens, at+1)
-        if not closing_paren_index:
-            raise EspressoInvalidSyntax("( Was never closed at {}".format(self.tokens[at+1].position))
-
-        func_param_tokens = self.tokens[at+2:closing_paren_index]
-        return self.parse(func_param_tokens), closing_paren_index - at
+        for func_param in frame.func_params:
+            if isinstance(func_param, StackFrame):
+                self._eval_stack_frame(func_param)
+            elif isinstance(func_param, int) or isinstance(func_param, str):
+                func_params.append(func_param)
+            else:
+                assert False, "_eval_stack_frame: Undefined stack param type {}".format(type(func_param))
         
+        typed_params = self.get_typed_params(func_def, func_params)
+        is_variadic = self.is_variadic(func_def, func_params)
+        
+        if is_variadic:
+            return func_def.func_call(*typed_params)
+        else:
+            return func_def.func_call(typed_params)
 
-    def parse(self, tokens: List[Token]) -> Stack:
-        self.tokens = tokens
-        stack = Stack() 
+    def eval(self, call_stack: Stack) -> any:
+        pass
 
-        i = 0 
-        while i < len(tokens):
-            cur, nxt = tokens[i], self.next_token(i)
+s = "foo.bar()"
 
-            if cur.type == TokenType.IDENTIFIER:
-                call_chain_tokens, offset = self.parse_call_chain(i)
-                call_chain = [tkn.value for tkn in call_chain_tokens]
-                i += offset
+evaluator = Evaluator() 
 
-                arguments, offset = self.parse_func_params(i)
+evaluator.define_function(Func(lambda: 1 + 2, ["foo", "bar"], []))
 
-                i += offset
-                stack.push(StackFrame(call_chain, arguments))
-
-                i += offset
-            elif cur.type in {TokenType.STRING, TokenType.INTEGER}:
-                stack.push(cur.value if cur.type == TokenType.STRING else int(cur.value))
-
-            i+=1
-
-        return stack
+# evaluator.eval(Parser().parse(Lexer().lex(s)))

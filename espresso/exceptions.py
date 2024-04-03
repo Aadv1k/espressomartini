@@ -1,0 +1,2 @@
+class EspressoInvalidSyntax(Exception):
+    pass
