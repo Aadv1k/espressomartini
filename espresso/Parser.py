@@ -10,21 +10,22 @@ from .Lexer import TokenType, Token
 
 from .exceptions import EspressoInvalidSyntax
 
+
 class StackFrame(NamedTuple):
-    func_chain : List[str]
-    func_params: List[Union[int, str, 'StackFrame']]
+    func_chain: List[str]
+    func_params: List[Union[int, str, "StackFrame"]]
 
 
 class Parser:
     def __init__(self):
         self.call_stack = Stack()
         self.tokens = None
-    
+
     def next_token(self, i):
         if i + 1 >= len(self.tokens):
             return None
-        return self.tokens[i+1]
-   
+        return self.tokens[i + 1]
+
     def parse_call_chain(self, at: int) -> tuple[List[Token], int]:
         assert self.tokens[at].type == TokenType.IDENTIFIER
         call_chain_tokens = [self.tokens[at]]
@@ -36,11 +37,13 @@ class Parser:
 
             if cur.type == TokenType.DOT:
                 if nxt is None or nxt.type != TokenType.IDENTIFIER:
-                    raise EspressoInvalidSyntax("Invalid syntax at col {}".format(cur.position))
+                    raise EspressoInvalidSyntax(
+                        "Invalid syntax at col {}".format(cur.position)
+                    )
 
                 offset += 2
                 call_chain_tokens.append(nxt)
-            i+=1
+            i += 1
 
         return call_chain_tokens, offset
 
@@ -60,24 +63,25 @@ class Parser:
 
     def parse_func_params(self, at: int) -> List[Token]:
         assert self.tokens[at].type == TokenType.IDENTIFIER
-        offset =  0
+        offset = 0
 
-        if self.tokens[at+1].type != TokenType.LPAREN:
+        if self.tokens[at + 1].type != TokenType.LPAREN:
             return [], offset
 
-        closing_paren_index = self.get_closing_paren_index(self.tokens, at+1)
+        closing_paren_index = self.get_closing_paren_index(self.tokens, at + 1)
         if not closing_paren_index:
-            raise EspressoInvalidSyntax("( Was never closed at {}".format(self.tokens[at+1].position))
+            raise EspressoInvalidSyntax(
+                "( Was never closed at {}".format(self.tokens[at + 1].position)
+            )
 
-        func_param_tokens = self.tokens[at+2:closing_paren_index]
+        func_param_tokens = self.tokens[at + 2 : closing_paren_index]
         return self.parse(func_param_tokens), closing_paren_index - at
-        
 
     def parse(self, tokens: List[Token]) -> Stack:
         self.tokens = tokens
-        stack = Stack() 
+        stack = Stack()
 
-        i = 0 
+        i = 0
         while i < len(tokens):
             cur, nxt = tokens[i], self.next_token(i)
 
@@ -93,8 +97,10 @@ class Parser:
 
                 i += offset
             elif cur.type in {TokenType.STRING, TokenType.INTEGER}:
-                stack.push(cur.value if cur.type == TokenType.STRING else int(cur.value))
+                stack.push(
+                    cur.value if cur.type == TokenType.STRING else int(cur.value)
+                )
 
-            i+=1
+            i += 1
 
         return stack

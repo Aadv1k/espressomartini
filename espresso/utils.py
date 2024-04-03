@@ -13,7 +13,7 @@ class Stack:
 
     def push(self, f):
         self.stack.append(f)
-        
+
     def pop(self):
         if len(self.stack) == 0:
             return None
