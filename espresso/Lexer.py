@@ -30,7 +30,7 @@ class Lexer:
         while self.advance() is not None:
             if self.cur() == ".":
                 tokens.append(Token(TokenType.DOT, ".", self.cursor))
-            elif self.cur() == ",":
+            elif self.cur() == ",": # TODO: ignoring commas is problematic because the in func calls any delimeter can be used unless specified otherwise 
                 pass
             elif self.cur() == "(":
                 tokens.append(Token(TokenType.LPAREN, "(", self.cursor))

@@ -2,6 +2,8 @@ from espresso.Parser import Parser, StackFrame
 from espresso.Lexer import Lexer
 from espresso.utils import Stack
 
+from espresso.exceptions import EspressoInvalidSyntax, EspressoTypeError, EspressoNameError
+
 from typing import NamedTuple, List, Union
 
 class Func(NamedTuple):
@@ -14,13 +16,13 @@ class Evaluator:
         self.namespace = {}
 
     def get_function(self, func_name: Union[List[str], str]) -> Func:
-        func_call_chain = func_name if isinstance(type(func_name), list) else func_name.split(".")
-        final_func = None
+        func_call_chain = func_name if isinstance(func_name, list) else func_name.split(".")
+        final_func = self.namespace
         for call in func_call_chain:
-            final_func =  self.namespace.get(call)
+            final_func = final_func.get(call)
 
         if not final_func:
-            raise NameError("Function \"{}\" is not defined in Namespace \"{}\"".format(func_call_chain[-1], ".".join(func_call_chain[:-1])))
+            raise EspressoNameError("Function \"{}\" is not defined in Namespace \"{}\"".format(func_call_chain[-1], ".".join(func_call_chain[:-1])))
             
         return final_func
 
@@ -32,38 +34,44 @@ class Evaluator:
         def_space[f.func_name[-1]] = f
 
     def is_variadic(self, func: Func, params: List[Union[str, int]]):
-        return len(func.func_argument_types) > 0 and func.func_argument_types[0].startswith("*"):
+        return len(func.func_argument_types) > 0 and func.func_argument_types[0].startswith("*")
 
+    # TODO: Handle overloading
     def get_typed_params(self, func: Func, params: List[Union[str, int]]):
         param_types = func.func_argument_types
+        func_name = ".".join(func.func_name)
         parsed_params = []
 
         if self.is_variadic(func, params):
             param_types = [param_types[0][1:]] * len(param_types)
 
-        for i, param_type in enumerate(param_types):
-            if param_type.endswith("?") and not params[i]:
-                parsed_params.append(None)
-                continue
+        try:
+            for i, param_type in enumerate(param_types):
+                param_type = param_type.strip().lower()
+                if param_type.endswith("?"):
+                    # if a corresponding param doesn't exist but it is an optional type
+                    if len(params) <= i:
+                        parsed_params.append(None)
+                        continue
+                    else:
+                        param_type = param_type[:-1]
 
-            if param_type.startswith("str") and not isinstance(params[i], str):
-                raise Exception("PROPER ERROR MESSAGE HERE")
-            elif param_type.startswith("int") and not isinstance(params[i], int):
-                raise Exception("PROPER ERROR MESSAGE HERE")
-            elif param_type.startswith("any"): # simply ignore and push
-                pass
-            else:
-                raise Exception("UNKNOWN PARAM TYPE LOL")
-            
-            parsed_params.append(params[i])
+                if param_type == "str":
+                    if not isinstance(params[i], str):
+                        raise EspressoTypeError(f"Expected type 'str' for parameter {i+1} of function '{func_name}', but received {type(params[i])} instead.")
+                elif param_type == "int":
+                    if not isinstance(params[i], int):
+                        raise EspressoTypeError(f"Expected type 'int' for parameter {i+1} of function '{func_name}', but received {type(params[i])} instead.")
+                elif param_type == "any":
+                    pass
+                else:
+                    raise EspressoTypeError(f"Unknown parameter type '{param_type}' for parameter {i+1} of function '{func_name}'.")
+
+                parsed_params.append(params[i])
+        except IndexError:
+            raise EspressoTypeError(f"Not enough parameters provided for function '{func_name}'.")
 
         return parsed_params
-            
-
-            
-
-    def is_variadic(self) -> bool:
-        pass
 
     def _eval_stack_frame(self, frame: StackFrame):
         func_def = self.get_function(frame.func_chain)
@@ -81,17 +89,19 @@ class Evaluator:
         is_variadic = self.is_variadic(func_def, func_params)
         
         if is_variadic:
-            return func_def.func_call(*typed_params)
-        else:
             return func_def.func_call(typed_params)
+        else:
+            return func_def.func_call(*typed_params)
 
     def eval(self, call_stack: Stack) -> any:
-        pass
+        computed = []
+        while call_stack.length != 0:
+            computed = self._eval_stack_frame(call_stack.pop())
+        return computed
 
-s = "foo.bar()"
+# s = "baba(10 69 420)"
 
-evaluator = Evaluator() 
+# evaluator = Evaluator() 
 
-evaluator.define_function(Func(lambda: 1 + 2, ["foo", "bar"], []))
-
-# evaluator.eval(Parser().parse(Lexer().lex(s)))
+# evaluator.define_function(Func(lambda x, y: x + y, ["add"], ["int", "int?"]))
+# print(evaluator.eval(Parser().parse(Lexer().lex(s))))
