@@ -1,10 +1,10 @@
-# Espresso 
+# Espresso :coffee:
 
-zero-dependency type-safe expression parser in python
+A type-safe expression parser in python
 
 ## Rationale
 
-This has been built as part of a [larger project](https://github.com/aadv1k/project-bombay) having type-safety out of the box eliminates the need for the caller to handle it, providing better [separation of concerns](https://en.wikipedia.org/wiki/Separation_of_concerns)
+The need for an expression parser usually implies a safe interface to call functions, having type-safety out of the box eliminates the ambiguity that might come with other parsers, providing better [separation of concerns](https://en.wikipedia.org/wiki/Separation_of_concerns)
 
 ## Example
 
@@ -16,20 +16,36 @@ import string
 
 ctx = Context()
 
-# Namespaces are automatically resolved. In this case, within the space random, integer would be defined
-# functionally this is syntactic sugar, the namespaces are simply nested dictionaries
-ctx.define_function(random.randint, ["random", "integer"], ["int", "int"])
+# Namespaces are automatically resolved. In this case, within the space
+# random, integer would be defined. Functionally this is syntactic sugar,
+# the namespaces are simply nested dictionaries.
+ctx.define_function(
+    random.randint, ["random", "integer"], ["int", "int"]
+)
 
-# Variadic typing is also supported. The method will be passed an array of all the arguments (of a singular type)
-ctx.define_function(random.choice, ["random", "oneOf"], ["*any"]) 
-ctx.define_function(random.choice, ["random", "oneOfInteger"], ["*int"]) 
-ctx.define_function(random.choice, ["random", "oneOfString"], ["*str"]) 
+# Variadic typing is also supported. The method will be passed an array of
+# all the arguments (of a singular type).
+ctx.define_function(
+    random.choice, ["random", "oneOf"], ["*any"]
+)
+ctx.define_function(
+    random.choice, ["random", "oneOfInteger"], ["*int"]
+)
+ctx.define_function(
+    random.choice, ["random", "oneOfString"], ["*str"]
+)
 
-def random_string(length = 32):
-    return ''.join(random.choice(string.ascii_letters + string.digits) for i in range(length))
+
+def random_string(length=32):
+    return "".join(
+        random.choice(string.ascii_letters + string.digits) for i in range(length)
+    )
+
 
 # Optional typing, will pass None if not provided
-ctx.define_function(random_string, ["random", "string"], ["str?"]) 
+ctx.define_function(
+    random_string, ["random", "string"], ["str?"]
+)
 
 ctx.eval("random.integer(0, 10)")
 ```
