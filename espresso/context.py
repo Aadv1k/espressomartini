@@ -13,4 +13,4 @@ class Context:
         self.evaluator.define_function(Func(*args))
 
     def eval(self, src):
-        self.evaluator.eval(self.parser.parse(self.lexer.lex(src)))
+        return self.evaluator.eval(self.parser.parse(self.lexer.lex(src)))

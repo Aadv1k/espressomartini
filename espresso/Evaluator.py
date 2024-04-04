@@ -24,13 +24,14 @@ class Evaluator:
         final_func = self.namespace
         for call in func_call_chain:
             final_func = final_func.get(call)
-
-        if not final_func:
-            raise EspressoNameError(
-                'Function "{}" is not defined in Namespace "{}"'.format(
-                    func_call_chain[-1], ".".join(func_call_chain[:-1])
+            if not final_func:
+                raise EspressoNameError(
+                    'Function "{}" is not defined in Namespace "{}"'.format(
+                        func_call_chain[-1], ".".join(func_call_chain[:-1])
+                    )
                 )
-            )
+        
+
 
         return final_func
 
@@ -114,15 +115,5 @@ class Evaluator:
             return func_def.func_call(*typed_params)
 
     def eval(self, call_stack: Stack) -> any:
-        computed = []
-        while call_stack.length != 0:
-            computed = self._eval_stack_frame(call_stack.pop())
-        return computed
-
-
-# s = "baba(10 69 420)"
-
-# evaluator = Evaluator()
-
-# evaluator.define_function(Func(lambda x, y: x + y, ["add"], ["int", "int?"]))
-# print(evaluator.eval(Parser().parse(Lexer().lex(s))))
+        top = call_stack.pop()
+        return self._eval_stack_frame(top)
