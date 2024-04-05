@@ -27,6 +27,7 @@ class Lexer:
 
     def lex(self, input_string):
         self.input = input_string.strip().replace("\n", " ")
+        self.cursor = -1
 
         tokens = []
 
@@ -43,6 +44,7 @@ class Lexer:
                 tokens.append(Token(TokenType.RPAREN, ")", self.cursor))
             elif self.cur() == '"':
                 n = self.find_next_index('"')
+                
                 if n is None:
                     raise EspressoInvalidSyntax(
                         f"Unterminated string literal at position {self.cursor}"
@@ -52,7 +54,7 @@ class Lexer:
                         TokenType.STRING, self.input[self.cursor + 1 : n], self.cursor
                     )
                 )
-                self.cursor = n
+                self.cursor += n
             elif self.cur() == " ":
                 continue
             elif self.cur().isdigit():

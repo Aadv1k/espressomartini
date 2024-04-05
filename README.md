@@ -9,7 +9,7 @@ The need for an expression parser usually implies a safe interface to call funct
 ## Example
 
 ```python
-from espresso.Context import Context
+from espresso import Context
 
 import random
 import string
