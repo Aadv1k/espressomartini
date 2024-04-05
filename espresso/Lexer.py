@@ -54,7 +54,7 @@ class Lexer:
                         TokenType.STRING, self.input[self.cursor + 1 : n], self.cursor
                     )
                 )
-                self.cursor += n
+                self.cursor = n
             elif self.cur() == " ":
                 continue
             elif self.cur().isdigit():
@@ -79,6 +79,8 @@ class Lexer:
         return tokens
 
     def cur(self):
+        if self.cursor >= len(self.input):
+            return None
         return self.input[self.cursor]
 
     def find_next_index(self, char):

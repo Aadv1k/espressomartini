@@ -75,7 +75,14 @@ class Parser:
             )
 
         func_param_tokens = self.tokens[at + 2 : closing_paren_index]
-        return self.parse(func_param_tokens), closing_paren_index - at
+
+        resolved_params = self.parse(func_param_tokens)
+        offset = closing_paren_index - at
+
+        print(at, [i.type for i in func_param_tokens], list(resolved_params))
+
+        return resolved_params, offset 
+
 
     def parse(self, tokens: List[Token]) -> Stack:
         self.tokens = tokens
