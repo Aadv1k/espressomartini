@@ -1,5 +1,6 @@
 from espresso.Parser import Parser, StackFrame, Stack
 from espresso.Lexer import Lexer
+from espresso.exceptions import EspressoInvalidSyntax
 
 import pytest
 
@@ -19,5 +20,17 @@ def test_should_resolve_nested_stack():
     stack = parser.parse(lexer.lex("foo(bar(), 123)"))
 
     top = stack.pop()
+
     assert isinstance(top, StackFrame)
     assert top.func_params.length == 2
+
+    assert top.func_params.pop() == 123
+    assert isinstance(top.func_params.pop(), StackFrame)
+
+
+def test_should_rase_necessary_exceptions():
+    with pytest.raises(EspressoInvalidSyntax):
+        parser.parse(lexer.lex("foo(bar()"))
+
+    with pytest.raises(EspressoInvalidSyntax):
+        parser.parse(lexer.lex("foo.(bar()"))
