@@ -1,9 +1,9 @@
 from enum import Enum, auto
 from typing import Union, List, NamedTuple
 
-import pprint
-
 import random
+
+import pprint 
 
 from .utils import Stack
 from .Lexer import TokenType, Token
@@ -69,6 +69,7 @@ class Parser:
             return [], offset
 
         closing_paren_index = self.get_closing_paren_index(self.tokens, at + 1)
+
         if not closing_paren_index:
             raise EspressoInvalidSyntax(
                 "( Was never closed at {}".format(self.tokens[at + 1].position)
@@ -79,10 +80,7 @@ class Parser:
         resolved_params = self.parse(func_param_tokens)
         offset = closing_paren_index - at
 
-        print(at, [i.type for i in func_param_tokens], list(resolved_params))
-
-        return resolved_params, offset 
-
+        return resolved_params, offset
 
     def parse(self, tokens: List[Token]) -> Stack:
         self.tokens = tokens
@@ -98,11 +96,9 @@ class Parser:
                 i += offset
 
                 arguments, offset = self.parse_func_params(i)
-
                 i += offset
+
                 stack.push(StackFrame(call_chain, arguments))
-
-                i += offset
             elif cur.type in {TokenType.STRING, TokenType.INTEGER}:
                 stack.push(
                     cur.value if cur.type == TokenType.STRING else int(cur.value)
