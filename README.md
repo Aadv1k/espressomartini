@@ -1,20 +1,22 @@
 # Espresso :coffee:
 
-A type-safe expression parser in python
+A tiny type-safe expression parser in python
 
 ## Rationale
 
-The need for an expression parser usually implies a safe interface to call functions, having type-safety out of the box eliminates the ambiguity that might come with other parsers, providing better [separation of concerns](https://en.wikipedia.org/wiki/Separation_of_concerns)
+In certain cases, there is need for a safe way for the back-end to call functions provided by the client, espresso addresses this through a type-safety post-processing setup to ensure the function always receives the type it was defined with.
+
 
 ## Example
 
 ```python
-from espresso import Context
+import espresso
 
 import random
 import string
 
-ctx = Context()
+# An interface between the interpreter frontend and backend
+ctx = espresso.Context()
 
 # Namespaces are automatically resolved. In this case, within the space
 # random, integer would be defined. Functionally this is syntactic sugar,
@@ -34,7 +36,6 @@ ctx.define_function(
 ctx.define_function(
     random.choice, ["random", "oneOfString"], ["*str"]
 )
-
 
 def random_string(length=32):
     return "".join(
