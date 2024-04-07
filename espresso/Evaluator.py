@@ -47,14 +47,18 @@ class Evaluator:
             0
         ].startswith("*")
 
-    # TODO: Handle overloading
     def get_typed_params(self, func: Func, params: List[Union[str, int]]):
         param_types = func.func_argument_types
         func_name = ".".join(func.func_name)
         parsed_params = []
+        variadic = self.is_variadic(func, params)
 
-        if self.is_variadic(func, params):
+        if variadic:
             param_types = [param_types[0][1:]] * len(param_types)
+
+        # Handling overloading
+        if not variadic and len(param_types) < len(params):
+            raise EspressoTypeError(f"Function '{func_name}' expects {len(param_types)} parameters, but {len(params)} were provided.")
 
         try:
             for i, param_type in enumerate(param_types):
@@ -80,7 +84,7 @@ class Evaluator:
                 elif param_type == "any":
                     pass
                 else:
-                    raise EspressoTypeError(
+                    raise EspressoNameError(
                         f"Unknown parameter type '{param_type}' for parameter {i+1} of function '{func_name}'."
                     )
 

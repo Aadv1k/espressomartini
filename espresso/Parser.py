@@ -65,7 +65,7 @@ class Parser:
         assert self.tokens[at].type == TokenType.IDENTIFIER
         offset = 0
 
-        if self.tokens[at + 1].type != TokenType.LPAREN:
+        if at+1 >= len(self.tokens) or self.tokens[at + 1].type != TokenType.LPAREN:
             return [], offset
 
         closing_paren_index = self.get_closing_paren_index(self.tokens, at + 1)

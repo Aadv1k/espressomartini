@@ -7,6 +7,20 @@ import pytest
 parser = Parser()
 lexer = Lexer()
 
+
+def test_should_parse_simple_expression():
+    stack = parser.parse(lexer.lex("foo(bar(baz()))"))
+
+    
+    top = stack.pop()
+    assert isinstance(top, StackFrame)
+    assert top.func_chain == ["foo"]
+
+    top = top.func_params.pop()
+    assert isinstance(top, StackFrame)
+    assert top.func_chain == ["bar"]
+    
+    
 def test_should_resolve_flat_call_stack():
     stack = parser.parse(lexer.lex("32, 33, 34, \"foo\""))
 
