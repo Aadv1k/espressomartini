@@ -54,7 +54,7 @@ class Evaluator:
         variadic = self.is_variadic(func, params)
 
         if variadic:
-            param_types = [param_types[0][1:]] * len(param_types)
+            param_types = [param_types[0][1:]] * len(params)
 
         # Handling overloading
         if not variadic and len(param_types) < len(params):
