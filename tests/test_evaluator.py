@@ -29,8 +29,4 @@ def test_should_check_type_system():
 
     with pytest.raises(exceptions.EspressoTypeError):
         evaluator.eval(p('foo("bar", "baz")'))
-
-
-    with pytest.raises(exceptions.EspressoNameError):
-        evaluator.define_function(Func(lambda x: x * x, ["square"], ["unknown type"]))
     

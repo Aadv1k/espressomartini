@@ -2,6 +2,9 @@ class Stack:
     def __init__(self):
         self.stack = []
 
+    def __str__(self):
+        return f"Stack<{', '.join([str(i) for i in self.stack])}>"
+
     @property
     def length(self):
         return len(self.stack)

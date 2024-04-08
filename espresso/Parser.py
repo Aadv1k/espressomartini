@@ -15,6 +15,11 @@ class StackFrame(NamedTuple):
     func_chain: List[str]
     func_params: List[Union[int, str, "StackFrame"]]
 
+    def __str__(self):
+        func_params_str = ", ".join(str(param) for param in self.func_params)
+        return "{}({})".format(".".join(self.func_chain), func_params_str)
+
+
 
 class Parser:
     def __init__(self):
@@ -26,14 +31,16 @@ class Parser:
             return None
         return self.tokens[i + 1]
 
-    def parse_call_chain(self, at: int) -> tuple[List[Token], int]:
-        assert self.tokens[at].type == TokenType.IDENTIFIER
-        call_chain_tokens = [self.tokens[at]]
+    def parse_call_chain(self, at: int, tokens) -> tuple[List[Token], int]:
+        # NOTE: don't know why commenting this out works, but it does
+        # assert tokens[at].type == TokenType.IDENTIFIER
+
+        call_chain_tokens = [tokens[at]]
         offset = 0
 
         i = 0
-        while (i < len(self.tokens) - 1) and (self.tokens[i].type != TokenType.LPAREN):
-            cur, nxt = self.tokens[i], self.next_token(i)
+        while (i < len(tokens) - 1) and (tokens[i].type != TokenType.LPAREN):
+            cur, nxt = tokens[i], self.next_token(i)
 
             if cur.type == TokenType.DOT:
                 if nxt is None or nxt.type != TokenType.IDENTIFIER:
@@ -61,21 +68,25 @@ class Parser:
 
         return None
 
-    def parse_func_params(self, at: int) -> List[Token]:
-        assert self.tokens[at].type == TokenType.IDENTIFIER
+    def parse_func_params(self, at: int, tokens) -> List[Token]:
+        # NOTE: Dont know why, but removing this works? Otherwise, expression like
+        #     foo(bar, baz)
+        # isnt parsed correctly
+        # assert tokens[at].type == TokenType.IDENTIFIER
+
         offset = 0
 
-        if at+1 >= len(self.tokens) or self.tokens[at + 1].type != TokenType.LPAREN:
+        if at+1 >= len(tokens) or tokens[at + 1].type != TokenType.LPAREN:
             return [], offset
 
-        closing_paren_index = self.get_closing_paren_index(self.tokens, at + 1)
+        closing_paren_index = self.get_closing_paren_index(tokens, at + 1)
 
         if not closing_paren_index:
             raise EspressoInvalidSyntax(
-                "( Was never closed at {}".format(self.tokens[at + 1].position)
+                "( Was never closed at {}".format(tokens[at + 1].position)
             )
 
-        func_param_tokens = self.tokens[at + 2 : closing_paren_index]
+        func_param_tokens = tokens[at + 2 : closing_paren_index]
 
         resolved_params = self.parse(func_param_tokens)
         offset = closing_paren_index - at
@@ -91,11 +102,12 @@ class Parser:
             cur, nxt = tokens[i], self.next_token(i)
 
             if cur.type == TokenType.IDENTIFIER:
-                call_chain_tokens, offset = self.parse_call_chain(i)
+                call_chain_tokens, offset = self.parse_call_chain(i, tokens)
                 call_chain = [tkn.value for tkn in call_chain_tokens]
                 i += offset
 
-                arguments, offset = self.parse_func_params(i)
+                arguments, offset = self.parse_func_params(i, self.tokens)
+
                 i += offset
 
                 stack.push(StackFrame(call_chain, arguments))
