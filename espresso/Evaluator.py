@@ -12,6 +12,9 @@ class Func(NamedTuple):
     func_name: List[str]
     func_argument_types: List[str]
 
+    def __str__(self):
+        return f"{'.'.join(self.func_name)}({', '.join(self.func_argument_types)})"
+
 
 class Evaluator:
     def __init__(self) -> None:
@@ -102,7 +105,7 @@ class Evaluator:
 
         for func_param in frame.func_params:
             if isinstance(func_param, StackFrame):
-                self._eval_stack_frame(func_param)
+                func_params.append(self._eval_stack_frame(func_param))
             elif isinstance(func_param, int) or isinstance(func_param, str):
                 func_params.append(func_param)
             else:
@@ -113,11 +116,13 @@ class Evaluator:
         typed_params = self.get_typed_params(func_def, func_params)
         is_variadic = self.is_variadic(func_def, func_params)
 
-        if is_variadic:
-            return func_def.func_call(typed_params)
-        else:
-            return func_def.func_call(*typed_params)
+
+        ret = func_def.func_call(typed_params) if is_variadic else func_def.func_call(*typed_params)
+
+        return ret
+
 
     def eval(self, call_stack: Stack) -> any:
         top = call_stack.pop()
-        return self._eval_stack_frame(top)
+        result = self._eval_stack_frame(top)
+        return result
