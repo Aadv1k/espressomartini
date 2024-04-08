@@ -38,10 +38,9 @@ class Parser:
         call_chain_tokens = [tokens[at]]
         offset = 0
 
-        i = 0
-        while (i < len(tokens) - 1) and (tokens[i].type != TokenType.LPAREN):
+        i = at
+        while (i < len(tokens) - 1) and (tokens[i].type not in {TokenType.LPAREN, TokenType.COMMA}):
             cur, nxt = tokens[i], self.next_token(i)
-
             if cur.type == TokenType.DOT:
                 if nxt is None or nxt.type != TokenType.IDENTIFIER:
                     raise EspressoInvalidSyntax(
@@ -51,6 +50,7 @@ class Parser:
                 offset += 2
                 call_chain_tokens.append(nxt)
             i += 1
+
 
         return call_chain_tokens, offset
 

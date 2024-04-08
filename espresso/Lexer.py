@@ -8,6 +8,7 @@ class TokenType(Enum):
     LPAREN = auto()
     RPAREN = auto()
     DOT = auto()
+    COMMA = auto()
 
     INTEGER = auto()
     STRING = auto()
@@ -36,8 +37,9 @@ class Lexer:
                 tokens.append(Token(TokenType.DOT, ".", self.cursor))
             elif (
                 self.cur() == ","
-            ):  # TODO: ignoring commas is problematic because the in func calls any delimeter can be used unless specified otherwise
-                pass
+            ):  
+                
+                tokens.append(Token(TokenType.COMMA, ",", self.cursor))
             elif self.cur() == "(":
                 tokens.append(Token(TokenType.LPAREN, "(", self.cursor))
             elif self.cur() == ")":
