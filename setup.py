@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="python-espresso",
-    version="1.8.2",
+    version="1.8.3",
     description="A tiny type-safe expression parser in Python",
     long_description=long_description,
     long_description_content_type="text/markdown",
