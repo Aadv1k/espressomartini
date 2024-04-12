@@ -1,11 +1,12 @@
-# Espresso :coffee:
+# Espresso ☕
 
-A tiny type-safe expression parser in python
+A tiny, type-safe expression parser in python.
+
+### This documentation is a WIP
 
 ## Rationale
 
 In certain cases, there is need for a safe way for the back-end to call functions provided by the client, espresso addresses this through a type-safety post-processing setup to ensure the function always receives the type it was defined with.
-
 
 ## Example
 

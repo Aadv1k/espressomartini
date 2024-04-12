@@ -124,5 +124,7 @@ class Evaluator:
 
     def eval(self, call_stack: Stack) -> any:
         top = call_stack.pop()
+        if not isinstance(top, StackFrame):
+            return top
         result = self._eval_stack_frame(top)
         return result
